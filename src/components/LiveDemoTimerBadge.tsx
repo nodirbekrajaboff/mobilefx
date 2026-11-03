@@ -29,7 +29,7 @@ export function LiveDemoTimerBadge() {
     ? {
         badgeLabel: 'Демо время',
         popoverTitle: 'Активное время приложения',
-        popoverSubtitle: `Лимит работы: ${liveTimer.hours} ч. (.env APP_LIVE_HOURS)`,
+        popoverSubtitle: `Лимит работы: ${liveTimer.hours} ч.`,
         startedAtLabel: 'Время запуска',
         expiresAtLabel: 'Время окончания',
         remainingLabel: 'Осталось времени',
@@ -38,7 +38,7 @@ export function LiveDemoTimerBadge() {
       ? {
           badgeLabel: 'Live Time',
           popoverTitle: 'Application Live Session',
-          popoverSubtitle: `Allocated runtime: ${liveTimer.hours}h (.env APP_LIVE_HOURS)`,
+          popoverSubtitle: `Allocated runtime: ${liveTimer.hours}h`,
           startedAtLabel: 'Started at',
           expiresAtLabel: 'Expires at',
           remainingLabel: 'Remaining time',
@@ -46,7 +46,7 @@ export function LiveDemoTimerBadge() {
       : {
           badgeLabel: 'Ishlash vaqti',
           popoverTitle: 'Ilova jonli ishlash vaqti',
-          popoverSubtitle: `Ajratilgan muddat: ${liveTimer.hours} soat (.env APP_LIVE_HOURS)`,
+          popoverSubtitle: `Ajratilgan muddat: ${liveTimer.hours} soat`,
           startedAtLabel: 'Boshlangan vaqt',
           expiresAtLabel: 'Tugash vaqti',
           remainingLabel: 'Qolgan vaqt',

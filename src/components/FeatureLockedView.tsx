@@ -11,21 +11,15 @@ import { getLocale } from '#/paraglide/runtime'
 const LOCKED_VIEW_I18N = {
   uz: {
     badge: 'Qulflangan funksiya',
-    subtitle:
-      "Ushbu bo'lim tizim konfiguratsiyasi (.env APP_FEATURES) orqali cheklangan. Foydalanish uchun administratorga murojaat qiling yoki .env faylida ushbu modulni yoqing.",
-    envHint: "Yoqish uchun .env fayliga qo'shing:",
+    subtitle: "Ushbu bo'lim qulflangan. Foydalanish uchun administratorga murojaat qiling.",
   },
   ru: {
     badge: 'Функция заблокирована',
-    subtitle:
-      'Этот раздел ограничен в системной конфигурации (.env APP_FEATURES). Обратитесь к администратору или включите модуль в файле .env.',
-    envHint: 'Чтобы включить, добавьте в .env:',
+    subtitle: 'Этот раздел заблокирован. Для доступа обратитесь к администратору.',
   },
   en: {
     badge: 'Feature Locked',
-    subtitle:
-      'This module is restricted via system environment configuration (.env APP_FEATURES). Contact the administrator or enable this key in your .env file.',
-    envHint: 'To enable, add to .env:',
+    subtitle: 'This module is locked. Please contact the administrator for access.',
   },
 } as const
 
@@ -53,13 +47,6 @@ export function FeatureLockedView({ feature }: { feature: AppFeatureKey }) {
         <div className="flex flex-col gap-1.5">
           <h2 className="text-foreground text-lg font-bold tracking-tight">{title}</h2>
           <p className="text-muted-foreground text-xs leading-relaxed">{copy.subtitle}</p>
-        </div>
-
-        <div className="border-border/80 bg-muted/40 w-full rounded-xl border px-3.5 py-2.5 text-left">
-          <div className="text-muted-foreground text-[11px] font-medium">{copy.envHint}</div>
-          <code className="text-foreground mt-1 block font-mono text-xs font-bold">
-            APP_FEATURES=&quot;{feature}&quot;
-          </code>
         </div>
 
         <Button asChild className="mt-1 w-full">

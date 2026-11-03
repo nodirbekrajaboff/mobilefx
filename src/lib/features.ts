@@ -239,24 +239,21 @@ export function getFeatureTitle(feature: AppFeatureKey, locale?: string): string
 export function getLockedFeatureToastMessage(
   feature: AppFeatureKey,
   locale?: string,
-): { title: string; description: string } {
+): { title: string; description?: string } {
   const name = getFeatureTitle(feature, locale)
   const lang = (locale || 'uz').toLowerCase()
   if (lang.startsWith('ru')) {
     return {
       title: `🔒 Функция «${name}» заблокирована`,
-      description: 'Эта возможность отключена в конфигурации окружения (.env APP_FEATURES).',
     }
   }
   if (lang.startsWith('en')) {
     return {
       title: `🔒 "${name}" is locked`,
-      description: 'This feature is disabled in the environment configuration (.env APP_FEATURES).',
     }
   }
   return {
     title: `🔒 «${name}» funksiyasi qulflangan`,
-    description: "Ushbu imkoniyat tizim sozlamalarida (.env APP_FEATURES) o'chirilgan.",
   }
 }
 
@@ -271,6 +268,26 @@ export interface AppLiveTimerState {
   expiresAt: string | null
   remainingMs: number | null
   isExpired: boolean
+}
+
+function parseHoursInput(trimmed: string): number {
+  const direct = Number(trimmed)
+  if (Number.isFinite(direct)) return direct
+
+  const match = trimmed.match(/^([0-9]+(?:\.[0-9]+)?)\s*([a-zA-Zа-яА-Яʻʼ']+)?$/)
+  if (!match) return Number.NaN
+
+  const value = Number(match[1])
+  if (!Number.isFinite(value)) return Number.NaN
+
+  const unit = (match[2] || 'h').toLowerCase()
+  if (unit === 'm' || unit.startsWith('min') || unit.startsWith('daq')) {
+    return value / 60
+  }
+  if (unit === 'd' || unit.startsWith('day') || unit.startsWith('kun')) {
+    return value * 24
+  }
+  return value
 }
 
 export function parseAppLiveHoursEnv(
@@ -302,7 +319,7 @@ export function parseAppLiveHoursEnv(
     }
   }
 
-  const parsedHours = Number(trimmed)
+  const parsedHours = parseHoursInput(trimmed)
   if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
     return {
       enabled: false,

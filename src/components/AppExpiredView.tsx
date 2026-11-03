@@ -17,7 +17,7 @@ export function AppExpiredView() {
         description: `Выделенное время работы приложения (${hours} ч.) истекло. Доступ к интерфейсу и серверным API временно приостановлен.`,
         startedLabel: 'Время запуска',
         expiredLabel: 'Время окончания',
-        hint: 'Чтобы продлить время работы, обновите переменную APP_LIVE_HOURS в файле .env на сервере.',
+        hint: 'Для продления времени доступа обратитесь к администратору.',
         retry: 'Проверить статус',
       }
     : locale.startsWith('en')
@@ -27,7 +27,7 @@ export function AppExpiredView() {
           description: `The allocated live runtime (${hours} hours) has expired. Both the user interface and backend API are now locked.`,
           startedLabel: 'Started at',
           expiredLabel: 'Expired at',
-          hint: 'To extend access, update the APP_LIVE_HOURS variable in your server .env configuration.',
+          hint: 'Please contact the administrator to extend your demo session.',
           retry: 'Check Status Again',
         }
       : {
@@ -36,7 +36,7 @@ export function AppExpiredView() {
           description: `Ushbu taqdimot/demo uchun ajratilgan ${hours} soatlik ishlash muddati o'z nihoyasiga yetdi. Tizim va barcha server API so'rovlari vaqtincha to'xtatildi.`,
           startedLabel: 'Boshlangan vaqt',
           expiredLabel: 'Tugagan vaqt',
-          hint: 'Ishlash vaqtini uzaytirish uchun serverdagi .env faylida APP_LIVE_HOURS qiymatini yangilang yoki administratorga murojaat qiling.',
+          hint: 'Ishlash vaqtini uzaytirish uchun administratorga murojaat qiling.',
           retry: 'Holatni qayta tekshirish',
         }
 

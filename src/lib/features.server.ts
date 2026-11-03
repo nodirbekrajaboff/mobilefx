@@ -85,7 +85,7 @@ export function buildFeatureLockedPayload(feature: AppFeatureKey) {
     ok: false,
     locked: true,
     feature,
-    message: `🔒 «${title}» funksiyasi qulflangan (.env APP_FEATURES orqali cheklangan)`,
+    message: `🔒 «${title}» funksiyasi qulflangan`,
   }
 }
 

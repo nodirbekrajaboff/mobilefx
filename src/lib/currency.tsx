@@ -158,9 +158,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   const notifyFeatureLocked = (feature: AppFeatureKey) => {
     const msg = getLockedFeatureToastMessage(feature, getLocale())
-    toast.error(msg.title, {
-      description: msg.description,
-    })
+    toast.error(msg.title)
   }
 
   const currencyRatesEnabled = isFeatureEnabled('currency_rates')

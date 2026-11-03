@@ -348,6 +348,15 @@ describe('Mobile Fix ERP — ElysiaJS + Eden Treaty + PostgreSQL Transactions', 
     expect(activeTimer.remainingMs).toBe(3 * 60 * 60 * 1000)
     expect(formatRemainingLiveTime(activeTimer.remainingMs)).toBe('03:00:00')
 
+    // Support unit suffixes like "10h" and "30m"
+    const suffixedHoursTimer = parseAppLiveHoursEnv('10h', baseStart, baseStart, baseStart)
+    expect(suffixedHoursTimer.enabled).toBe(true)
+    expect(suffixedHoursTimer.hours).toBe(10)
+
+    const suffixedMinutesTimer = parseAppLiveHoursEnv('30m', baseStart, baseStart, baseStart)
+    expect(suffixedMinutesTimer.enabled).toBe(true)
+    expect(suffixedMinutesTimer.hours).toBe(0.5)
+
     const expiredTimer = parseAppLiveHoursEnv(
       '2',
       '2026-11-03T10:00:00.000Z',

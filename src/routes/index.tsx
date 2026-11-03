@@ -1072,7 +1072,7 @@ function MainLaunchpadPage() {
 
                 {isTileLocked && (
                   <span
-                    title="Locked (.env APP_FEATURES)"
+                    title="Qulflangan"
                     className="absolute -top-1.5 -right-1.5 z-10 flex size-6 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500 text-white shadow-sm ring-2 ring-white dark:ring-zinc-900"
                   >
                     <IconLock className="size-3.5 stroke-[2.4]" />
@@ -1246,7 +1246,7 @@ function MainLaunchpadPage() {
                       <Illustration />
                       {isSubAppLocked && (
                         <span
-                          title="Locked (.env APP_FEATURES)"
+                          title="Qulflangan"
                           className="absolute -top-1.5 -right-1.5 z-10 flex size-6 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500 text-white shadow-sm ring-2 ring-white dark:ring-zinc-900"
                         >
                           <IconLock className="size-3.5 stroke-[2.4]" />
