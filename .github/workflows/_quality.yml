@@ -1,0 +1,73 @@
+name: Reusable Quality Checks
+
+on:
+  workflow_call:
+    inputs:
+      bun_version:
+        required: false
+        type: string
+        default: 'latest'
+
+jobs:
+  quality:
+    name: Format, Build, Typecheck & Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: store_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d store_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/store_test
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: test-better-auth-secret-key-at-least-32-chars
+      ADMIN_LOGIN: admin@mobilefix.uz
+      ADMIN_PASSWORD: password123
+      BOT_TOKEN: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+      APP_FEATURES: all
+      APP_LIVE_HOURS: ''
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ inputs.bun_version }}
+
+      - name: Restore Bun cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: quality-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            quality-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check formatting (bun fmt)
+        run: bun run format:check
+
+      - name: Build application (generates Paraglide & Route Tree)
+        run: bun run build
+
+      - name: Check TypeScript types
+        run: bun run check-types
+
+      - name: Run integration & unit tests
+        run: bun test

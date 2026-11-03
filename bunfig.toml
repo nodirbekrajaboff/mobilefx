@@ -1,0 +1,8 @@
+[fmt]
+printWidth = 100
+semi = false
+singleQuote = true
+sortImports = true
+sortTailwindcss = true
+sortPackageJson = true
+jsdoc = true

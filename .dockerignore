@@ -1,0 +1,16 @@
+**/node_modules
+**/.turbo
+**/.output
+**/.nitro
+**/.tanstack
+**/.vinxi
+**/.wrangler
+**/dist
+**/dist-ssr
+**/build
+**/.git
+**/.agents
+**/.vscode
+**/.DS_Store
+**/.env*
+!**/.env.example

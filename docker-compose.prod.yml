@@ -1,0 +1,28 @@
+services:
+  app:
+    image: docker-hub.afron.group/store-app:latest
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-admin@mobilefix.uz}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password123}
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      APP_FEATURES: ${APP_FEATURES:-all}
+      APP_LIVE_HOURS: ${APP_LIVE_HOURS:-}
+      APP_LIVE_START_TIME: ${APP_LIVE_START_TIME:-}
+    ports:
+      - '3000:3000'
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
