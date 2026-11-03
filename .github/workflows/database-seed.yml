@@ -1,0 +1,107 @@
+name: Database Seed (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - development
+
+concurrency:
+  group: database-seed-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build seed image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to private registry
+        uses: docker/login-action@v3
+        with:
+          registry: docker-hub.afron.group
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.seed
+          push: true
+          platforms: linux/amd64
+          tags: |
+            docker-hub.afron.group/store-seed:${{ github.sha }}
+            docker-hub.afron.group/store-seed:latest
+          cache-from: type=gha,scope=seed
+          cache-to: type=gha,mode=max,scope=seed
+
+  seed:
+    name: Run database seed
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 5
+    env:
+      DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+      DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+      DOKPLOY_SEED_COMPOSE_ID: ${{ github.event.inputs.environment == 'production' && secrets.DOKPLOY_SEED_COMPOSE_ID || secrets.DOKPLOY_SEED_COMPOSE_ID_DEV }}
+    steps:
+      - name: Validate Dokploy secrets
+        run: |
+          if [ -z "${DOKPLOY_SEED_COMPOSE_ID}" ]; then
+            echo "Error: DOKPLOY_SEED_COMPOSE_ID is not configured in GitHub repository secrets."
+            exit 1
+          fi
+
+      - name: Trigger seed execution
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "x-api-key: ${DOKPLOY_API_TOKEN}" \
+            --data "{\"composeId\":\"${DOKPLOY_SEED_COMPOSE_ID}\",\"title\":\"Database seed ${GITHUB_SHA}\"}" \
+            "${DOKPLOY_URL%/}/api/compose.redeploy"
+
+      - name: Wait for seed completion
+        run: |
+          sleep 5
+          for attempt in $(seq 1 36); do
+            response=$(curl --fail-with-body --silent --show-error \
+              --header "x-api-key: ${DOKPLOY_API_TOKEN}" \
+              "${DOKPLOY_URL%/}/api/compose.one?composeId=${DOKPLOY_SEED_COMPOSE_ID}")
+            status=$(jq --raw-output '.composeStatus // empty' <<<"$response")
+
+            echo "Seed deployment status: ${status:-unknown} (${attempt}/36)"
+
+            case "$status" in
+              done)
+                echo "Database seed completed successfully."
+                exit 0
+                ;;
+              error)
+                echo "Database seed failed. Check the Dokploy deployment logs."
+                exit 1
+                ;;
+              idle|running|"")
+                sleep 5
+                ;;
+              *)
+                echo "Unexpected Dokploy compose status: $status"
+                exit 1
+                ;;
+            esac
+          done
+
+          echo "Timed out waiting for database seed."
+          exit 1

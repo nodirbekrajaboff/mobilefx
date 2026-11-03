@@ -1,0 +1,13 @@
+services:
+  migrator:
+    image: docker-hub.afron.group/store-migrator:latest
+    pull_policy: always
+    restart: 'no'
+    networks:
+      - dokploy-network
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+
+networks:
+  dokploy-network:
+    external: true

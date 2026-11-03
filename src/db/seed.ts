@@ -1960,8 +1960,34 @@ async function runSeed(): Promise<void> {
   }
 }
 
-if (import.meta.main) {
+export async function resetAndReseed(): Promise<void> {
+  seedPromise = null
+  await db.execute(sql`
+    TRUNCATE TABLE
+      data_table_record_values,
+      data_table_records,
+      pos_sales,
+      suppliers
+    RESTART IDENTITY CASCADE;
+  `)
   await ensureSeeded()
+}
+
+if (import.meta.main) {
+  const isFresh =
+    process.argv.includes('--fresh') ||
+    ['1', 'true', 'yes'].includes(
+      String(process.env.SEED_FRESH || '')
+        .trim()
+        .toLowerCase(),
+    )
+
+  if (isFresh) {
+    console.log('♻️ Resetting demo records and running fresh seed...')
+    await resetAndReseed()
+  } else {
+    await ensureSeeded()
+  }
   console.log(
     '✅ Database seeded (languages: uz-UZ, ru-RU, en-US + data_tables + fields + rich EAV showcase records).',
   )

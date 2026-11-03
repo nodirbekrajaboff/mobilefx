@@ -1,0 +1,92 @@
+name: Migrator Development Build and Deploy
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: migrator-development
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build development migrator image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to private registry
+        uses: docker/login-action@v3
+        with:
+          registry: docker-hub.afron.group
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.migrator
+          push: true
+          platforms: linux/amd64
+          tags: |
+            docker-hub.afron.group/store-migrator-dev:${{ github.sha }}
+            docker-hub.afron.group/store-migrator-dev:latest
+          cache-from: type=gha,scope=migrator-dev
+          cache-to: type=gha,mode=max,scope=migrator-dev
+
+  migrate:
+    name: Run development database migrations
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 5
+    env:
+      DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+      DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+      DOKPLOY_MIGRATOR_COMPOSE_ID: ${{ secrets.DOKPLOY_MIGRATOR_COMPOSE_ID_DEV }}
+    steps:
+      - name: Trigger migrator deployment
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "x-api-key: ${DOKPLOY_API_TOKEN}" \
+            --data "{\"composeId\":\"${DOKPLOY_MIGRATOR_COMPOSE_ID}\",\"title\":\"Development database migration ${GITHUB_SHA}\"}" \
+            "${DOKPLOY_URL%/}/api/compose.redeploy"
+
+      - name: Wait for migrations
+        run: |
+          sleep 5
+          for attempt in $(seq 1 36); do
+            response=$(curl --fail-with-body --silent --show-error \
+              --header "x-api-key: ${DOKPLOY_API_TOKEN}" \
+              "${DOKPLOY_URL%/}/api/compose.one?composeId=${DOKPLOY_MIGRATOR_COMPOSE_ID}")
+            status=$(jq --raw-output '.composeStatus // empty' <<<"$response")
+
+            echo "Migration deployment status: ${status:-unknown} (${attempt}/36)"
+
+            case "$status" in
+              done)
+                echo "Development database migrations completed successfully."
+                exit 0
+                ;;
+              error)
+                echo "Development database migrations failed. Check the Dokploy deployment logs."
+                exit 1
+                ;;
+              idle|running|"")
+                sleep 5
+                ;;
+              *)
+                echo "Unexpected Dokploy compose status: $status"
+                exit 1
+                ;;
+            esac
+          done
+
+          echo "Timed out waiting for development database migrations."
+          exit 1

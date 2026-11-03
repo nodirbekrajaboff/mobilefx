@@ -6,42 +6,23 @@ on:
       app_name:
         required: true
         type: string
-        description: 'Application name (web, server, bot)'
       dockerfile:
         required: true
         type: string
-        description: 'Path to Dockerfile (e.g. Dockerfile, server/Dockerfile, bot/Dockerfile)'
       build_args:
         required: false
         type: string
-        description: 'Multiline string of Docker build arguments'
-      registry_url:
-        required: false
-        type: string
-        default: 'docker-hub.afron.group'
-        description: 'Container registry host'
-      image_prefix:
-        required: false
-        type: string
-        default: 'store'
-        description: 'Image name prefix'
     secrets:
       REGISTRY_USERNAME:
         required: true
       REGISTRY_PASSWORD:
         required: true
-      DEPLOY_WEBHOOK:
-        required: false
-      DOKPLOY_URL:
-        required: false
-      DOKPLOY_API_TOKEN:
-        required: false
-      DOKPLOY_APPLICATION_ID:
-        required: false
+      DOKPLOY_WEBHOOK:
+        required: true
 
 jobs:
-  build-and-deploy:
-    name: Build & Deploy ${{ inputs.app_name }}
+  build:
+    name: Build ${{ inputs.app_name }} image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -50,14 +31,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to container registry (${{ inputs.registry_url }})
+      - name: Log in to private registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ inputs.registry_url }}
+          registry: docker-hub.afron.group
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Build and push Docker image to ${{ inputs.registry_url }}
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -66,33 +47,17 @@ jobs:
           platforms: linux/amd64
           build-args: ${{ inputs.build_args }}
           tags: |
-            ${{ inputs.registry_url }}/${{ inputs.image_prefix }}-${{ inputs.app_name }}:${{ github.sha }}
-            ${{ inputs.registry_url }}/${{ inputs.image_prefix }}-${{ inputs.app_name }}:latest
+            docker-hub.afron.group/store-${{ inputs.app_name }}:${{ github.sha }}
+            docker-hub.afron.group/store-${{ inputs.app_name }}:latest
           cache-from: type=gha,scope=${{ inputs.app_name }}
           cache-to: type=gha,mode=max,scope=${{ inputs.app_name }}
 
-      - name: Trigger Dokploy deployment (Webhook or REST API)
+  deploy:
+    name: Deploy ${{ inputs.app_name }} via Dokploy
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Trigger Dokploy deploy webhook
         env:
-          DOKPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK }}
-          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
-          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
-          DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_APPLICATION_ID }}
-        run: |
-          set -euo pipefail
-
-          if [[ -n "${DOKPLOY_WEBHOOK:-}" ]]; then
-            echo "🚀 Triggering Dokploy deployment via Webhook..."
-            curl --fail-with-body --retry 3 --retry-delay 2 --request POST "$DOKPLOY_WEBHOOK"
-            echo "✅ Dokploy webhook triggered."
-          elif [[ -n "${DOKPLOY_URL:-}" && -n "${DOKPLOY_API_TOKEN:-}" && -n "${DOKPLOY_APPLICATION_ID:-}" ]]; then
-            echo "🚀 Triggering Dokploy deployment via REST API (${DOKPLOY_URL})..."
-            curl --fail-with-body --retry 3 --retry-delay 2 \
-              --request POST "${DOKPLOY_URL%/}/api/application.deploy" \
-              --header "x-api-key: ${DOKPLOY_API_TOKEN}" \
-              --header "Content-Type: application/json" \
-              --data "{\"applicationId\":\"${DOKPLOY_APPLICATION_ID}\"}"
-            echo "✅ Dokploy API deployment triggered."
-          else
-            echo "⚠️ Neither DOKPLOY_WEBHOOK nor (DOKPLOY_URL + DOKPLOY_API_TOKEN + DOKPLOY_APPLICATION_ID) secrets were provided!"
-            exit 1
-          fi
+          DOKPLOY_WEBHOOK: ${{ secrets.DOKPLOY_WEBHOOK }}
+        run: curl --fail-with-body --request POST "$DOKPLOY_WEBHOOK"

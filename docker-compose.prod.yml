@@ -1,8 +1,32 @@
 services:
+  migrator:
+    image: docker-hub.afron.group/store-migrator:latest
+    pull_policy: always
+    restart: 'no'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+
+  seed:
+    image: docker-hub.afron.group/store-seed:latest
+    pull_policy: always
+    restart: 'no'
+    profiles:
+      - seed
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      SEED_FRESH: ${SEED_FRESH:-false}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+
   app:
     image: docker-hub.afron.group/store-app:latest
     pull_policy: always
     restart: unless-stopped
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
